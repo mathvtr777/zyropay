@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* PRIVA Design System - Premium Fintech Theme */
+/* Colors: Purple (#8A2BE2 / #7B2CF5), Black (#000000), White (#FFFFFF) */
+
+@layer base {
+  :root {
+    /* Core Colors */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+
+    /* Card - slightly off-white for depth */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+
+    /* Primary - Purple */
+    --primary: 271 76% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Primary Glow for gradients */
+    --primary-glow: 269 95% 57%;
+
+    /* Secondary - Dark */
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted */
+    --muted: 270 10% 95%;
+    --muted-foreground: 0 0% 40%;
+
+    /* Accent - Light Purple */
+    --accent: 271 76% 95%;
+    --accent-foreground: 271 76% 35%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    /* Border & Input */
+    --border: 270 20% 90%;
+    --input: 270 20% 90%;
+    --ring: 271 76% 53%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 271 76% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 271 76% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 271 76% 53%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(271 76% 53%), hsl(269 95% 57%));
+    --gradient-dark: linear-gradient(135deg, hsl(0 0% 5%), hsl(0 0% 15%));
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(271 76% 53% / 0.15);
+    --shadow-md: 0 4px 20px -4px hsl(271 76% 53% / 0.25);
+    --shadow-lg: 0 8px 40px -8px hsl(271 76% 53% / 0.35);
+    --shadow-glow: 0 0 40px hsl(271 76% 53% / 0.4);
+  }
+
+  .dark {
+    /* Dark Mode - Black base with purple accents */
+    --background: 0 0% 2%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 271 76% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --primary-glow: 269 95% 57%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 271 76% 15%;
+    --accent-foreground: 271 76% 80%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 271 76% 53%;
+
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 271 76% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 271 76% 20%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 271 76% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/50;
+  }
+}
+
+@layer components {
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.3);
+  }
+
+  .premium-shadow {
+    box-shadow: 
+      0 4px 20px -4px hsl(var(--primary) / 0.25),
+      0 0 0 1px hsl(var(--border) / 0.5);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px -8px hsl(var(--primary) / 0.35);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
