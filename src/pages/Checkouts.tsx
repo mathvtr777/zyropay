@@ -139,7 +139,7 @@ export default function Checkouts() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem asChild>
-                                                <Link to={`/checkout-editor/${checkout.id}`}>
+                                                <Link to={`/checkout-builder/${checkout.id}`}>
                                                     <Pencil className="h-4 w-4 mr-2" />
                                                     Editar
                                                 </Link>
@@ -169,7 +169,7 @@ export default function Checkouts() {
                                         </span>
                                     </div>
                                     <Button variant="outline" className="w-full mt-4" asChild>
-                                        <Link to={`/checkout-editor/${checkout.id}`}>
+                                        <Link to={`/checkout-builder/${checkout.id}`}>
                                             Editar Visual
                                         </Link>
                                     </Button>
