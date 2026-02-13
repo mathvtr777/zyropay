@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Check, Copy, Plus, Settings, Trash2 } from "lucide-react";
+import { Check, Copy, Plus, Settings, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  useProviderCredentials,
+  useSaveProviderCredentials,
+  useDeleteProviderCredentials
+} from "@/hooks/useSupabase";
+import { encryptCredential } from "@/lib/encryption";
 
 export interface Provider {
   id: string;
@@ -38,8 +44,7 @@ export const availableProviders: Provider[] = [
     name: "Mercado Pago",
     logo: "MP",
     description: "Solução de pagamentos do Mercado Livre",
-    connected: true,
-    webhookUrl: "https://priva.app/webhook/mercadopago/abc123",
+    connected: false,
   },
   {
     id: "asaas",
@@ -76,38 +81,82 @@ export default function Providers() {
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [secretKey, setSecretKey] = useState("");
   const { toast } = useToast();
+
+  const { data: credentials, isLoading } = useProviderCredentials();
+  const saveCredentials = useSaveProviderCredentials();
+  const deleteCredentials = useDeleteProviderCredentials();
+
+  // Update providers list based on saved credentials
+  useEffect(() => {
+    if (credentials) {
+      setProviders(
+        availableProviders.map((p) => ({
+          ...p,
+          connected: credentials.some(
+            (c) => c.provider === p.id && c.is_active
+          ),
+        }))
+      );
+    }
+  }, [credentials]);
 
   const handleConnect = (provider: Provider) => {
     setSelectedProvider(provider);
+    setApiKey("");
+    setSecretKey("");
     setIsDialogOpen(true);
   };
 
-  const handleDisconnect = (providerId: string) => {
-    setProviders(
-      providers.map((p) =>
-        p.id === providerId ? { ...p, connected: false, webhookUrl: undefined } : p
-      )
-    );
-    toast({
-      title: "Provedor desconectado",
-      description: "O provedor foi removido com sucesso.",
-    });
+  const handleDisconnect = async (providerId: string) => {
+    const credential = credentials?.find((c) => c.provider === providerId);
+    if (!credential) return;
+
+    try {
+      await deleteCredentials.mutateAsync(credential.id);
+      toast({
+        title: "Provedor desconectado",
+        description: "O provedor foi removido com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao desconectar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSaveProvider = (e: React.FormEvent) => {
+  const handleSaveProvider = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedProvider) {
-      const webhookUrl = `https://priva.app/webhook/${selectedProvider.id}/${Math.random().toString(36).substr(2, 9)}`;
-      setProviders(
-        providers.map((p) =>
-          p.id === selectedProvider.id ? { ...p, connected: true, webhookUrl } : p
-        )
-      );
+    if (!selectedProvider || !apiKey || !secretKey) return;
+
+    try {
+      // Encrypt credentials before saving
+      const encryptedApiKey = await encryptCredential(apiKey);
+      const encryptedSecretKey = await encryptCredential(secretKey);
+
+      await saveCredentials.mutateAsync({
+        provider: selectedProvider.id,
+        apiKey: encryptedApiKey,
+        secretKey: encryptedSecretKey,
+        environment: "sandbox",
+      });
+
       setIsDialogOpen(false);
+      setApiKey("");
+      setSecretKey("");
       toast({
         title: "Provedor conectado!",
         description: `${selectedProvider.name} foi conectado com sucesso.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao conectar provedor",
+        description: error.message || "Não foi possível salvar as credenciais.",
+        variant: "destructive",
       });
     }
   };
@@ -260,6 +309,8 @@ export default function Providers() {
                 <Input
                   id="client-id"
                   placeholder="Insira seu Client ID"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
                   required
                 />
               </div>
@@ -269,13 +320,15 @@ export default function Providers() {
                   id="secret"
                   type="password"
                   placeholder="Insira seu Secret"
+                  value={secretKey}
+                  onChange={(e) => setSecretKey(e.target.value)}
                   required
                 />
               </div>
               <div className="p-4 rounded-xl bg-accent/50 border border-accent">
                 <p className="text-sm text-accent-foreground">
-                  <strong>Importante:</strong> Após conectar, você receberá uma URL de webhook
-                  para configurar no painel do {selectedProvider?.name}.
+                  <strong>Importante:</strong> Suas credenciais serão criptografadas
+                  e armazenadas com segurança. Use credenciais de SANDBOX/TEST para testes.
                 </p>
               </div>
             </div>
@@ -283,8 +336,19 @@ export default function Providers() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="gradient-primary">
-                Conectar Provedor
+              <Button
+                type="submit"
+                className="gradient-primary"
+                disabled={saveCredentials.isPending}
+              >
+                {saveCredentials.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Conectar Provedor"
+                )}
               </Button>
             </DialogFooter>
           </form>

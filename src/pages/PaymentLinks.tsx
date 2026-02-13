@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { availableProviders, Provider } from "./Providers";
-import { Link2, Copy, Check, ExternalLink } from "lucide-react";
+import { Link2, Copy, Check, ExternalLink, Loader2 } from "lucide-react";
+import { useCreatePaymentLink, useProviderCredentials } from "@/hooks/useSupabase";
 
 export default function PaymentLinks() {
     const [selectedProviderId, setSelectedProviderId] = useState<string>("");
@@ -18,7 +19,10 @@ export default function PaymentLinks() {
     const [copiedLink, setCopiedLink] = useState(false);
     const { toast } = useToast();
 
-    const handleGenerateLink = (e: React.FormEvent) => {
+    const { data: credentials, isLoading: loadingCredentials } = useProviderCredentials();
+    const createPaymentLink = useCreatePaymentLink();
+
+    const handleGenerateLink = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedProviderId || !amount) {
             toast({
@@ -29,16 +33,39 @@ export default function PaymentLinks() {
             return;
         }
 
-        // Simulando a geração de um link
-        const provider = availableProviders.find(p => p.id === selectedProviderId);
-        const linkId = Math.random().toString(36).substr(2, 9);
-        const mockLink = `https://priva.app/pay/${provider?.id}/${linkId}?amount=${amount}`;
+        // Check if provider is configured
+        const hasCredentials = credentials?.some(
+            c => c.provider === selectedProviderId && c.is_active
+        );
 
-        setGeneratedLink(mockLink);
-        toast({
-            title: "Link gerado com sucesso!",
-            description: "Seu link de pagamento está pronto para ser compartilhado.",
-        });
+        if (!hasCredentials) {
+            toast({
+                title: "Provedor não configurado",
+                description: "Configure as credenciais deste provedor na página de Provedores primeiro.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        try {
+            const result = await createPaymentLink.mutateAsync({
+                provider: selectedProviderId,
+                amount: parseFloat(amount),
+                description: description || undefined,
+            });
+
+            setGeneratedLink(result.paymentLink);
+            toast({
+                title: "Link gerado com sucesso!",
+                description: "Seu link de pagamento REAL está pronto para ser compartilhado.",
+            });
+        } catch (error: any) {
+            toast({
+                title: "Erro ao gerar link",
+                description: error.message || "Não foi possível gerar o link. Verifique suas credenciais.",
+                variant: "destructive",
+            });
+        }
     };
 
     const copyLink = async () => {
@@ -116,9 +143,22 @@ export default function PaymentLinks() {
                                     />
                                 </div>
 
-                                <Button type="submit" className="w-full gradient-primary">
-                                    <Link2 className="h-4 w-4 mr-2" />
-                                    Gerar Link
+                                <Button
+                                    type="submit"
+                                    className="w-full gradient-primary"
+                                    disabled={createPaymentLink.isPending || loadingCredentials}
+                                >
+                                    {createPaymentLink.isPending ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Gerando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Link2 className="h-4 w-4 mr-2" />
+                                            Gerar Link
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </CardContent>

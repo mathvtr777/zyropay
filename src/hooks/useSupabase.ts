@@ -310,3 +310,167 @@ export function useDashboardStats() {
         },
     });
 }
+
+// ============================================
+// PROVIDER CREDENTIALS HOOKS
+// ============================================
+
+export function useProviderCredentials() {
+    return useQuery({
+        queryKey: ["provider-credentials"],
+        queryFn: async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not authenticated");
+
+            const { data, error } = await supabase
+                .from("provider_credentials")
+                .select("id, provider, is_active, environment, created_at")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
+export function useSaveProviderCredentials() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            provider,
+            apiKey,
+            secretKey,
+            environment = 'sandbox'
+        }: {
+            provider: string;
+            apiKey: string;
+            secretKey: string;
+            environment?: 'sandbox' | 'production';
+        }) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not authenticated");
+
+            // Check if credentials already exist
+            const { data: existing } = await supabase
+                .from("provider_credentials")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("provider", provider)
+                .eq("environment", environment)
+                .single();
+
+            const credentialData = {
+                user_id: user.id,
+                provider,
+                api_key_encrypted: apiKey,
+                secret_key_encrypted: secretKey,
+                environment,
+                is_active: true,
+                updated_at: new Date().toISOString(),
+            };
+
+            if (existing) {
+                // Update existing
+                const { data, error } = await supabase
+                    .from("provider_credentials")
+                    .update(credentialData)
+                    .eq("id", existing.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return data;
+            } else {
+                // Insert new
+                const { data, error } = await supabase
+                    .from("provider_credentials")
+                    .insert(credentialData)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                return data;
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["provider-credentials"] });
+        },
+    });
+}
+
+export function useDeleteProviderCredentials() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not authenticated");
+
+            const { error } = await supabase
+                .from("provider_credentials")
+                .delete()
+                .eq("id", id)
+                .eq("user_id", user.id);
+
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["provider-credentials"] });
+        },
+    });
+}
+
+// ============================================
+// PAYMENT LINKS HOOKS
+// ============================================
+
+export function useCreatePaymentLink() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            provider,
+            amount,
+            description
+        }: {
+            provider: string;
+            amount: number;
+            description?: string;
+        }) => {
+            const { data, error } = await supabase.functions.invoke('create-payment-link', {
+                body: { provider, amount, description }
+            });
+
+            if (error) throw error;
+            if (!data.success) throw new Error(data.error || 'Failed to create payment link');
+
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["payment-links"] });
+        },
+    });
+}
+
+export function usePaymentLinks() {
+    return useQuery({
+        queryKey: ["payment-links"],
+        queryFn: async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Not authenticated");
+
+            const { data, error } = await supabase
+                .from("payment_links")
+                .select("*")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+            return data;
+        },
+    });
+}
+
