@@ -169,6 +169,40 @@ class AsaasAdapter {
     }
 }
 
+class PushinPayAdapter {
+    private apiKey: string
+
+    constructor(apiKey: string) {
+        this.apiKey = apiKey
+    }
+
+    async createPaymentLink(amount: number, description: string): Promise<PaymentLinkResult> {
+        const response = await fetch('https://api.pushinpay.com.br/api/pix/create', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: amount,
+                description: description || 'Pagamento',
+                expiresIn: 3600, // 1 hora
+            }),
+        })
+
+        if (!response.ok) {
+            const error = await response.text()
+            throw new Error(`Pushin Pay API error: ${error}`)
+        }
+
+        const data = await response.json()
+        return {
+            url: data.paymentUrl || data.qrCodeUrl,
+            externalId: data.id || data.transactionId,
+        }
+    }
+}
+
 // ============================================
 // MAIN HANDLER
 // ============================================

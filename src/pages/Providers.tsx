@@ -74,6 +74,13 @@ export const availableProviders: Provider[] = [
     description: "Infraestrutura de pagamentos",
     connected: false,
   },
+  {
+    id: "pushinpay",
+    name: "Pushin Pay",
+    logo: "PP",
+    description: "Pagamentos via PIX instantâneo",
+    connected: false,
+  },
 ];
 
 export default function Providers() {

@@ -53,7 +53,7 @@ create table if not exists public.transactions (
 create table if not exists public.provider_credentials (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
-  provider text not null check (provider in ('stripe', 'mercadopago', 'kirvano', 'asaas', 'gerencianet', 'pagarme')),
+  provider text not null check (provider in ('stripe', 'mercadopago', 'kirvano', 'asaas', 'gerencianet', 'pagarme', 'pushinpay')),
   api_key_encrypted text not null,
   secret_key_encrypted text not null,
   is_active boolean default true,
