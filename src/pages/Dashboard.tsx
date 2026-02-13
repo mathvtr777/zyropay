@@ -9,6 +9,7 @@ import {
   CreditCard,
   Filter,
   Plus,
+  Loader2,
 } from "lucide-react";
 import {
   AreaChart,
@@ -17,96 +18,71 @@ import {
   XAxis,
   Tooltip,
 } from "recharts";
+import { useDashboardStats } from "@/hooks/useSupabase";
 
-const stats = [
-  {
-    title: "Vendas Totais",
-    value: "R$ 12.450,00",
-    change: "12.5%",
-    trend: "up",
-    diff: "vs mês anterior",
-    icon: DollarSign,
-    iconBg: "bg-primary/10 text-primary",
-  },
-  {
-    title: "Vendas Hoje",
-    value: "R$ 1.280,00",
-    change: "8.2%",
-    trend: "up",
-    diff: "vs ontem",
-    icon: TrendingUp, // Using TrendingUp as 'insights' equivalent
-    iconBg: "bg-indigo-500/10 text-indigo-500",
-  },
-  {
-    title: "Checkouts Ativos",
-    value: "24",
-    change: "+3",
-    trend: "up",
-    diff: "esta semana",
-    icon: ShoppingBag,
-    iconBg: "bg-pink-500/10 text-pink-500",
-  },
-  {
-    title: "Taxa de Conversão",
-    value: "68%",
-    change: "-2.1%",
-    trend: "down",
-    diff: "vs mês anterior",
-    icon: CreditCard,
-    iconBg: "bg-amber-500/10 text-amber-500",
-  },
-];
-
+// Mock chart data - will be replaced with real data later
 const chartData = [
-  { name: "Jan", value: 4000 },
-  { name: "Fev", value: 3000 },
-  { name: "Mar", value: 5000 },
-  { name: "Abr", value: 4500 },
-  { name: "Mai", value: 6000 },
-  { name: "Jun", value: 5500 },
-  { name: "Jul", value: 7000 },
-];
-
-const recentTransactions = [
-  {
-    id: "1",
-    product: "Curso de Marketing Digital",
-    customer: "João Silva",
-    time: "5m atrás",
-    amount: "R$ 297,00",
-    status: "Pago",
-    statusColor: "bg-emerald-500/10 text-emerald-500",
-  },
-  {
-    id: "2",
-    product: "E-book Vendas Online",
-    customer: "Maria Santos",
-    time: "12m atrás",
-    amount: "R$ 47,00",
-    status: "Pendente",
-    statusColor: "bg-amber-500/10 text-amber-500",
-  },
-  {
-    id: "3",
-    product: "Mentoria Premium",
-    customer: "Carlos Oliveira",
-    time: "25m atrás",
-    amount: "R$ 997,00",
-    status: "Pago",
-    statusColor: "bg-emerald-500/10 text-emerald-500",
-  },
-  {
-    id: "4",
-    product: "Pack de Templates Notion",
-    customer: "Ana Costa",
-    time: "1h atrás",
-    amount: "R$ 29,00",
-    status: "Expirado",
-    statusColor: "bg-rose-500/10 text-rose-500",
-  },
+  { name: "Jan", value: 0 },
+  { name: "Fev", value: 0 },
+  { name: "Mar", value: 0 },
+  { name: "Abr", value: 0 },
+  { name: "Mai", value: 0 },
+  { name: "Jun", value: 0 },
+  { name: "Jul", value: 0 },
 ];
 
 export default function Dashboard() {
+  const { data: stats, isLoading } = useDashboardStats();
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const statsCards = [
+    {
+      title: "Vendas Totais",
+      value: `R$ ${(stats?.totalSales || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      change: "+0%",
+      trend: "up" as const,
+      diff: "vs mês anterior",
+      icon: DollarSign,
+      iconBg: "bg-primary/10 text-primary",
+    },
+    {
+      title: "Vendas Hoje",
+      value: `R$ ${(stats?.salesToday || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      change: "+0%",
+      trend: "up" as const,
+      diff: "vs ontem",
+      icon: TrendingUp,
+      iconBg: "bg-indigo-500/10 text-indigo-500",
+    },
+    {
+      title: "Checkouts Ativos",
+      value: String(stats?.activeCheckouts || 0),
+      change: "+0",
+      trend: "up" as const,
+      diff: "esta semana",
+      icon: ShoppingBag,
+      iconBg: "bg-pink-500/10 text-pink-500",
+    },
+    {
+      title: "Taxa de Conversão",
+      value: `${stats?.conversionRate || 0}%`,
+      change: "+0%",
+      trend: "up" as const,
+      diff: "vs mês anterior",
+      icon: CreditCard,
+      iconBg: "bg-amber-500/10 text-amber-500",
+    },
+  ];
+
   return (
     <DashboardLayout>
       <header className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -132,7 +108,7 @@ export default function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
+        {statsCards.map((stat, index) => (
           <div
             key={index}
             className="bg-card border border-border p-6 rounded-2xl hover:shadow-md transition-all"
@@ -226,34 +202,15 @@ export default function Dashboard() {
         <div className="bg-card border border-border rounded-2xl p-6">
           <div className="flex justify-between items-center mb-6">
             <h4 className="text-lg font-bold">Transações Recentes</h4>
-            <Button variant="link" className="text-xs font-bold text-primary h-auto p-0">
-              Ver Todas
+            <Button variant="link" className="text-xs font-bold text-primary h-auto p-0" asChild>
+              <Link to="/transactions">Ver Todas</Link>
             </Button>
           </div>
           <div className="space-y-4">
-            {recentTransactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between p-4 bg-muted/30 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-sm font-bold truncate">
-                    {transaction.product}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {transaction.customer} • {transaction.time}
-                  </span>
-                </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
-                  <span className="text-sm font-bold">{transaction.amount}</span>
-                  <span
-                    className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${transaction.statusColor}`}
-                  >
-                    {transaction.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm">Nenhuma transação ainda</p>
+              <p className="text-xs mt-2">Suas vendas aparecerão aqui</p>
+            </div>
           </div>
         </div>
       </div>
