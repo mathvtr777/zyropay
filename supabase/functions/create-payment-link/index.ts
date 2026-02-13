@@ -271,6 +271,10 @@ serve(async (req) => {
             case 'asaas':
                 result = await new AsaasAdapter(apiKey).createPaymentLink(amount, description)
                 break
+            case 'pushinpay':
+                // Pushin Pay usa apenas o token (pode estar em apiKey ou secretKey)
+                result = await new PushinPayAdapter(secretKey || apiKey).createPaymentLink(amount, description)
+                break
             default:
                 throw new Error(`Provider ${provider} not supported yet`)
         }

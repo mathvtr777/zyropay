@@ -53,29 +53,38 @@ export default function Auth() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("signup-email") as string;
     const password = formData.get("signup-password") as string;
-    const name = formData.get("name") as string;
+    const firstName = formData.get("first-name") as string;
+    const lastName = formData.get("last-name") as string;
 
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: window.location.origin + "/dashboard",
           data: {
-            full_name: name,
+            first_name: firstName,
+            last_name: lastName,
+            full_name: `${firstName} ${lastName}`.trim(),
           },
         },
       });
 
       if (error) throw error;
 
-      toast({
-        title: "Conta criada!",
-        description: "Verifique seu email para confirmar a conta.",
-      });
-
-      // Se o email confirmation estiver desabilitado no Supabase, redireciona direto
+      // Se retornou uma sessão, significa que o email confirmation está desabilitado
       if (data.session) {
+        toast({
+          title: "Conta criada com sucesso!",
+          description: `Bem-vindo, ${firstName}!`,
+        });
         navigate("/dashboard");
+      } else {
+        // Email confirmation está habilitado
+        toast({
+          title: "Conta criada!",
+          description: "Verifique seu email para confirmar a conta.",
+        });
       }
     } catch (error: any) {
       toast({
@@ -174,16 +183,28 @@ export default function Auth() {
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nome completo</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="first-name">Primeiro Nome</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="first-name"
+                            name="first-name"
+                            type="text"
+                            placeholder="João"
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="last-name">Sobrenome</Label>
                         <Input
-                          id="name"
-                          name="name"
+                          id="last-name"
+                          name="last-name"
                           type="text"
-                          placeholder="Seu nome"
-                          className="pl-10"
+                          placeholder="Silva"
                           required
                         />
                       </div>
