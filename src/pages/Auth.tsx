@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Mail, Lock, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,31 +17,75 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulated login - will be replaced with Supabase auth
-    setTimeout(() => {
-      setIsLoading(false);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
       toast({
         title: "Login realizado!",
         description: "Bem-vindo de volta ao PRIVA.",
       });
       navigate("/dashboard");
-    }, 1000);
+    } catch (error: any) {
+      toast({
+        title: "Erro no login",
+        description: error.message || "Verifique suas credenciais e tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulated signup - will be replaced with Supabase auth
-    setTimeout(() => {
-      setIsLoading(false);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("signup-email") as string;
+    const password = formData.get("signup-password") as string;
+    const name = formData.get("name") as string;
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+
+      if (error) throw error;
+
       toast({
         title: "Conta criada!",
-        description: "Sua conta foi criada com sucesso.",
+        description: "Verifique seu email para confirmar a conta.",
       });
-      navigate("/dashboard");
-    }, 1000);
+
+      // Se o email confirmation estiver desabilitado no Supabase, redireciona direto
+      if (data.session) {
+        navigate("/dashboard");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar conta",
+        description: error.message || "Não foi possível criar a conta. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -85,6 +130,7 @@ export default function Auth() {
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="email"
+                          name="email"
                           type="email"
                           placeholder="seu@email.com"
                           className="pl-10"
@@ -98,6 +144,7 @@ export default function Auth() {
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="password"
+                          name="password"
                           type="password"
                           placeholder="••••••••"
                           className="pl-10"
@@ -133,6 +180,7 @@ export default function Auth() {
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="name"
+                          name="name"
                           type="text"
                           placeholder="Seu nome"
                           className="pl-10"
@@ -146,6 +194,7 @@ export default function Auth() {
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="signup-email"
+                          name="signup-email"
                           type="email"
                           placeholder="seu@email.com"
                           className="pl-10"
@@ -159,6 +208,7 @@ export default function Auth() {
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="signup-password"
+                          name="signup-password"
                           type="password"
                           placeholder="Mínimo 8 caracteres"
                           className="pl-10"
