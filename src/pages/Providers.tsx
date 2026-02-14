@@ -198,19 +198,53 @@ export default function Providers() {
   const handleTestConnection = async () => {
     if (!selectedProvider) return;
 
-    // Verificar se o provedor está conectado
-    const credential = credentials?.find((c) => c.provider === selectedProvider.id);
-    if (!credential) {
-      toast({
-        title: "Provedor não configurado",
-        description: "Por favor, salve as credenciais primeiro antes de testar.",
-        variant: "destructive",
-      });
-      return;
+    // Validar se o usuário preencheu as credenciais no formulário
+    if (selectedProvider.id === 'pushinpay') {
+      if (!apiKey) {
+        toast({
+          title: "Campo obrigatório",
+          description: "Por favor, insira o token de acesso antes de testar.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      if (!apiKey || !secretKey) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Por favor, preencha todos os campos antes de testar.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsTesting(true);
     try {
+      // Primeiro, salvar as credenciais temporariamente para testar
+      let encryptedApiKey: string;
+      let encryptedSecretKey: string;
+
+      if (selectedProvider.id === 'pushinpay') {
+        encryptedApiKey = await encryptCredential(apiKey);
+        encryptedSecretKey = await encryptCredential(apiKey);
+      } else {
+        encryptedApiKey = await encryptCredential(apiKey);
+        encryptedSecretKey = await encryptCredential(secretKey);
+      }
+
+      // Salvar credenciais
+      await saveCredentials.mutateAsync({
+        provider: selectedProvider.id,
+        apiKey: encryptedApiKey,
+        secretKey: encryptedSecretKey,
+        environment: "sandbox",
+      });
+
+      // Aguardar um pouco para garantir que salvou
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Agora testar a conexão
       const { data, error } = await supabase.functions.invoke('test-provider-connection', {
         body: { provider: selectedProvider.id }
       });
@@ -436,28 +470,26 @@ export default function Providers() {
                 Cancelar
               </Button>
 
-              {/* Botão de Teste - só aparece se o provedor já está conectado */}
-              {credentials?.some(c => c.provider === selectedProvider?.id) && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleTestConnection}
-                  disabled={isTesting || saveCredentials.isPending}
-                  className="gap-2"
-                >
-                  {isTesting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Testando...
-                    </>
-                  ) : (
-                    <>
-                      <TestTube className="h-4 w-4" />
-                      Testar Conexão
-                    </>
-                  )}
-                </Button>
-              )}
+              {/* Botão de Teste - sempre visível */}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleTestConnection}
+                disabled={isTesting || saveCredentials.isPending}
+                className="gap-2"
+              >
+                {isTesting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Testando...
+                  </>
+                ) : (
+                  <>
+                    <TestTube className="h-4 w-4" />
+                    Testar e Salvar
+                  </>
+                )}
+              </Button>
 
               <Button
                 type="submit"
@@ -470,7 +502,7 @@ export default function Providers() {
                     Salvando...
                   </>
                 ) : (
-                  "Conectar Provedor"
+                  "Salvar Sem Testar"
                 )}
               </Button>
             </DialogFooter>
