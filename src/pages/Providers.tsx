@@ -13,13 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Check, Copy, Plus, Settings, Trash2, Loader2 } from "lucide-react";
+import { Check, Copy, Plus, Settings, Trash2, Loader2, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   useProviderCredentials,
   useSaveProviderCredentials,
   useDeleteProviderCredentials
 } from "@/hooks/useSupabase";
+import { supabase } from "@/lib/supabase";
 import { encryptCredential } from "@/lib/encryption";
 
 export interface Provider {
@@ -90,6 +91,7 @@ export default function Providers() {
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [secretKey, setSecretKey] = useState("");
+  const [isTesting, setIsTesting] = useState(false);
   const { toast } = useToast();
 
   const { data: credentials, isLoading } = useProviderCredentials();
@@ -190,6 +192,51 @@ export default function Providers() {
         description: error.message || "Não foi possível salvar as credenciais.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleTestConnection = async () => {
+    if (!selectedProvider) return;
+
+    // Verificar se o provedor está conectado
+    const credential = credentials?.find((c) => c.provider === selectedProvider.id);
+    if (!credential) {
+      toast({
+        title: "Provedor não configurado",
+        description: "Por favor, salve as credenciais primeiro antes de testar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('test-provider-connection', {
+        body: { provider: selectedProvider.id }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "✅ Teste bem-sucedido!",
+          description: data.message,
+        });
+      } else {
+        toast({
+          title: "❌ Falha no teste",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao testar conexão",
+        description: error.message || "Não foi possível testar a conexão.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
     }
   };
 
@@ -384,14 +431,38 @@ export default function Providers() {
                 </p>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
+
+              {/* Botão de Teste - só aparece se o provedor já está conectado */}
+              {credentials?.some(c => c.provider === selectedProvider?.id) && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleTestConnection}
+                  disabled={isTesting || saveCredentials.isPending}
+                  className="gap-2"
+                >
+                  {isTesting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Testando...
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="h-4 w-4" />
+                      Testar Conexão
+                    </>
+                  )}
+                </Button>
+              )}
+
               <Button
                 type="submit"
                 className="gradient-primary"
-                disabled={saveCredentials.isPending}
+                disabled={saveCredentials.isPending || isTesting}
               >
                 {saveCredentials.isPending ? (
                   <>
