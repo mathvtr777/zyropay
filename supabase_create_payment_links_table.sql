@@ -28,6 +28,12 @@ CREATE INDEX IF NOT EXISTS idx_payment_links_status ON public.payment_links(stat
 -- Enable Row Level Security
 ALTER TABLE public.payment_links ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own payment links" ON public.payment_links;
+DROP POLICY IF EXISTS "Users can create their own payment links" ON public.payment_links;
+DROP POLICY IF EXISTS "Users can update their own payment links" ON public.payment_links;
+DROP POLICY IF EXISTS "Users can delete their own payment links" ON public.payment_links;
+
 -- RLS Policies
 CREATE POLICY "Users can view their own payment links"
   ON public.payment_links
