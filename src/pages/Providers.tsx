@@ -138,12 +138,37 @@ export default function Providers() {
 
   const handleSaveProvider = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProvider || !apiKey || !secretKey) return;
+    if (!selectedProvider) return;
 
     try {
-      // Encrypt credentials before saving
-      const encryptedApiKey = await encryptCredential(apiKey);
-      const encryptedSecretKey = await encryptCredential(secretKey);
+      let encryptedApiKey: string;
+      let encryptedSecretKey: string;
+
+      // Pushin Pay usa apenas um token
+      if (selectedProvider.id === 'pushinpay') {
+        if (!apiKey) {
+          toast({
+            title: "Campo obrigatório",
+            description: "Por favor, insira o token de acesso da Pushin Pay.",
+            variant: "destructive",
+          });
+          return;
+        }
+        encryptedApiKey = await encryptCredential(apiKey);
+        encryptedSecretKey = await encryptCredential(apiKey); // Mesmo token nos dois campos
+      } else {
+        // Outros provedores usam API Key e Secret Key
+        if (!apiKey || !secretKey) {
+          toast({
+            title: "Campos obrigatórios",
+            description: "Por favor, preencha todos os campos.",
+            variant: "destructive",
+          });
+          return;
+        }
+        encryptedApiKey = await encryptCredential(apiKey);
+        encryptedSecretKey = await encryptCredential(secretKey);
+      }
 
       await saveCredentials.mutateAsync({
         provider: selectedProvider.id,
@@ -311,27 +336,47 @@ export default function Providers() {
           </DialogHeader>
           <form onSubmit={handleSaveProvider}>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="client-id">Client ID / API Key</Label>
-                <Input
-                  id="client-id"
-                  placeholder="Insira seu Client ID"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="secret">Client Secret / Token</Label>
-                <Input
-                  id="secret"
-                  type="password"
-                  placeholder="Insira seu Secret"
-                  value={secretKey}
-                  onChange={(e) => setSecretKey(e.target.value)}
-                  required
-                />
-              </div>
+              {selectedProvider?.id === 'pushinpay' ? (
+                // Pushin Pay - apenas token
+                <div className="space-y-2">
+                  <Label htmlFor="token">Token de Acesso</Label>
+                  <Input
+                    id="token"
+                    placeholder="Insira seu Token de Acesso da Pushin Pay"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Encontre seu token em: Configurações → API → Token de Acesso
+                  </p>
+                </div>
+              ) : (
+                // Outros provedores - API Key e Secret
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="client-id">Client ID / API Key</Label>
+                    <Input
+                      id="client-id"
+                      placeholder="Insira seu Client ID"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="secret">Client Secret / Token</Label>
+                    <Input
+                      id="secret"
+                      type="password"
+                      placeholder="Insira seu Secret"
+                      value={secretKey}
+                      onChange={(e) => setSecretKey(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              )}
               <div className="p-4 rounded-xl bg-accent/50 border border-accent">
                 <p className="text-sm text-accent-foreground">
                   <strong>Importante:</strong> Suas credenciais serão criptografadas

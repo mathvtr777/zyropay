@@ -56,6 +56,44 @@ interface PaymentLinkResult {
     externalId?: string
 }
 
+// ============================================
+// SLUG GENERATION
+// ============================================
+
+const SLUG_LENGTH = 6
+const CHARACTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // No ambiguous chars
+
+function generateSlug(): string {
+    let slug = ''
+    for (let i = 0; i < SLUG_LENGTH; i++) {
+        const randomIndex = Math.floor(Math.random() * CHARACTERS.length)
+        slug += CHARACTERS[randomIndex]
+    }
+    return slug
+}
+
+async function generateUniqueSlug(supabaseClient: any): Promise<string> {
+    const maxAttempts = 10
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const slug = generateSlug()
+
+        // Check if slug exists
+        const { data } = await supabaseClient
+            .from('payment_links')
+            .select('id')
+            .eq('slug', slug)
+            .single()
+
+        if (!data) {
+            return slug
+        }
+    }
+
+    throw new Error('Failed to generate unique slug')
+}
+
+
 class StripeAdapter {
     private apiKey: string
 
@@ -279,6 +317,9 @@ serve(async (req) => {
                 throw new Error(`Provider ${provider} not supported yet`)
         }
 
+        // Generate unique slug
+        const slug = await generateUniqueSlug(supabaseClient)
+
         // Save payment link to database
         const { data: paymentLink, error: linkError } = await supabaseClient
             .from('payment_links')
@@ -289,6 +330,7 @@ serve(async (req) => {
                 description,
                 payment_url: result.url,
                 external_id: result.externalId,
+                slug,
                 status: 'active',
             })
             .select()
@@ -299,11 +341,16 @@ serve(async (req) => {
             // Still return the URL even if saving fails
         }
 
+        // Return custom domain link
+        const customDomainLink = `https://zyrocheckout.com.br/p/${slug}`
+
         return new Response(
             JSON.stringify({
                 success: true,
-                paymentLink: result.url,
+                paymentLink: customDomainLink,
+                slug,
                 id: paymentLink?.id,
+                gatewayUrl: result.url, // Include gateway URL for reference
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },

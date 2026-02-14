@@ -2,7 +2,7 @@
 
 ## ✅ Correção Aplicada
 
-A Pushin Pay foi configurada para usar **apenas um token**, simplificando o processo de integração.
+A Pushin Pay foi configurada para usar **apenas um token de acesso**, tornando a integração mais simples e direta.
 
 ## 🔧 Como Configurar
 
@@ -10,21 +10,17 @@ A Pushin Pay foi configurada para usar **apenas um token**, simplificando o proc
 1. Acesse: https://pushinpay.com.br/
 2. Faça login na sua conta
 3. Vá em **Configurações > API** ou **Integrações**
-4. Copie seu **Token de API**
+4. Copie seu **Token de Acesso**
 
 ### 2. Configurar no Sistema
 
 Ao conectar a Pushin Pay no sistema:
 
-**Opção 1 (Recomendada):**
-- **Client ID / API Key**: Cole seu Token
-- **Client Secret / Token**: Cole o mesmo Token
+1. Clique em **Conectar** no card da Pushin Pay
+2. Cole seu **Token de Acesso** no campo único
+3. Clique em **Conectar Provedor**
 
-**Opção 2:**
-- **Client ID / API Key**: Cole seu Token
-- **Client Secret / Token**: Deixe em branco (o sistema usará o API Key)
-
-> **Nota:** O sistema aceita o token em qualquer um dos dois campos. Se ambos estiverem preenchidos, usará o Secret. Se apenas um estiver preenchido, usará o que estiver disponível.
+> **Nota:** A Pushin Pay usa apenas um token. O formulário mostrará apenas um campo para você colar o token.
 
 ## 🚀 Testar
 

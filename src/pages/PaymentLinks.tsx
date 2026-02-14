@@ -54,10 +54,11 @@ export default function PaymentLinks() {
                 description: description || undefined,
             });
 
+            // Use the custom domain link from the response
             setGeneratedLink(result.paymentLink);
             toast({
                 title: "Link gerado com sucesso!",
-                description: "Seu link de pagamento REAL está pronto para ser compartilhado.",
+                description: "Seu link personalizado está pronto para compartilhar.",
             });
         } catch (error: any) {
             toast({

@@ -20,6 +20,7 @@ import Auth from "./pages/Auth";
 import PaymentLinks from "./pages/PaymentLinks";
 import Checkouts from "./pages/Checkouts";
 import NotFound from "./pages/NotFound";
+import PaymentRedirect from "./pages/PaymentRedirect";
 
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/p/:slug" element={<PaymentRedirect />} /> {/* Payment link redirect */}
             <Route path="/checkout/:checkoutId" element={<PublicCheckout />} /> {/* Legacy support */}
             <Route path="/c/:checkoutSlug/:productSlug" element={<PublicCheckout />} /> {/* New structure */}
             <Route path="/checkout/:checkoutId/success" element={<CheckoutSuccess />} />
