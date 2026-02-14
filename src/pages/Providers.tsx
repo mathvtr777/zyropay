@@ -21,6 +21,7 @@ import {
   useDeleteProviderCredentials
 } from "@/hooks/useSupabase";
 import { supabase } from "@/lib/supabase";
+import { callEdgeFunction } from "@/lib/supabase-edge";
 import { encryptCredential } from "@/lib/encryption";
 
 export interface Provider {
@@ -221,32 +222,11 @@ export default function Providers() {
 
     setIsTesting(true);
     try {
-      // Primeiro, salvar as credenciais temporariamente para testar
-      let encryptedApiKey: string;
-      let encryptedSecretKey: string;
-
-      if (selectedProvider.id === 'pushinpay') {
-        encryptedApiKey = await encryptCredential(apiKey);
-        encryptedSecretKey = await encryptCredential(apiKey);
-      } else {
-        encryptedApiKey = await encryptCredential(apiKey);
-        encryptedSecretKey = await encryptCredential(secretKey);
-      }
-
-      // Salvar credenciais
-      await saveCredentials.mutateAsync({
+      // Testar a conexão DIRETAMENTE sem salvar primeiro
+      // Passamos o token diretamente para a Edge Function validar
+      const { data, error } = await callEdgeFunction('test-provider-connection', {
         provider: selectedProvider.id,
-        apiKey: encryptedApiKey,
-        secretKey: encryptedSecretKey,
-        environment: "sandbox",
-      });
-
-      // Aguardar um pouco para garantir que salvou
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Agora testar a conexão
-      const { data, error } = await supabase.functions.invoke('test-provider-connection', {
-        body: { provider: selectedProvider.id }
+        testToken: apiKey // Envia o token diretamente
       });
 
       if (error) throw error;
@@ -256,6 +236,34 @@ export default function Providers() {
           title: "✅ Teste bem-sucedido!",
           description: data.message,
         });
+
+        // Agora que o teste passou, podemos salvar as credenciais
+        let encryptedApiKey: string;
+        let encryptedSecretKey: string;
+
+        if (selectedProvider.id === 'pushinpay') {
+          encryptedApiKey = await encryptCredential(apiKey);
+          encryptedSecretKey = await encryptCredential(apiKey);
+        } else {
+          encryptedApiKey = await encryptCredential(apiKey);
+          encryptedSecretKey = await encryptCredential(secretKey);
+        }
+
+        await saveCredentials.mutateAsync({
+          provider: selectedProvider.id,
+          apiKey: encryptedApiKey,
+          secretKey: encryptedSecretKey,
+          environment: "sandbox",
+        });
+
+        setIsDialogOpen(false);
+        setApiKey("");
+        setSecretKey("");
+
+        toast({
+          title: "Provedor conectado!",
+          description: `${selectedProvider.name} foi conectado com sucesso.`,
+        });
       } else {
         toast({
           title: "❌ Falha no teste",
@@ -264,6 +272,7 @@ export default function Providers() {
         });
       }
     } catch (error: any) {
+      console.error("Test connection error:", error);
       toast({
         title: "Erro ao testar conexão",
         description: error.message || "Não foi possível testar a conexão.",

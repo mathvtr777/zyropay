@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { callEdgeFunction } from "@/lib/supabase-edge";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -20,8 +21,8 @@ export default function PaymentRedirect() {
 
             try {
                 // Call Edge Function to get redirect URL
-                const { data, error } = await supabase.functions.invoke('get-redirect', {
-                    body: { slug }
+                const { data, error } = await callEdgeFunction('get-redirect', {
+                    slug
                 });
 
                 if (error) throw error;

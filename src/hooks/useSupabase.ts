@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { callEdgeFunction } from "@/lib/supabase-edge";
 import { Checkout, Product } from "@/types";
 
 // ============================================
@@ -439,8 +440,8 @@ export function useCreatePaymentLink() {
             amount: number;
             description?: string;
         }) => {
-            const { data, error } = await supabase.functions.invoke('create-payment-link', {
-                body: { provider, amount, description }
+            const { data, error } = await callEdgeFunction('create-payment-link', {
+                provider, amount, description
             });
 
             if (error) throw error;
